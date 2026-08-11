@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
-import matplotlib.pyplot as plt
+import os
 
 
 # ==================================================
@@ -16,941 +17,535 @@ st.set_page_config(
 
 
 # ==================================================
-# LOAD MODEL AND DATA
+# LOAD MODEL
 # ==================================================
 
-@st.cache_resource
-def load_model():
-    return joblib.load(
-        "models/student_performance_model.pkl"
-    )
+MODEL_PATH = "models/student_performance_model.pkl"
 
-
-@st.cache_data
-def load_data():
-    return pd.read_csv(
-        "data/raw/student-mat.csv",
-        sep=";"
-    )
-
-
-model = load_model()
-data = load_data()
+model = joblib.load(MODEL_PATH)
 
 
 # ==================================================
-# SESSION STATE — PREDICTION HISTORY
-# ==================================================
-
-if "prediction_history" not in st.session_state:
-    st.session_state.prediction_history = []
-
-
-# ==================================================
-# HEADER
+# TITLE
 # ==================================================
 
 st.title("🎓 Student Performance Analyzer")
 
-st.markdown(
+st.write(
     """
-    ### Analyze student performance and predict final grades
-
-    This machine learning application analyzes academic,
-    demographic, and lifestyle-related factors to predict
-    a student's final grade out of 20.
+    An interactive machine learning application that predicts
+    a student's final academic grade based on academic,
+    demographic, and lifestyle-related factors.
     """
 )
+
 
 st.divider()
 
 
 # ==================================================
-# SIDEBAR NAVIGATION
+# SIDEBAR
 # ==================================================
 
-st.sidebar.title("📌 Navigation")
+st.sidebar.header("📋 Student Information")
 
-page = st.sidebar.radio(
-    "Go to",
-    [
-        "🎯 Grade Prediction",
-        "📊 Data Analysis",
-        "🧾 Prediction History"
-    ]
+
+age = st.sidebar.slider(
+    "Age",
+    min_value=15,
+    max_value=22,
+    value=17
+)
+
+
+studytime = st.sidebar.slider(
+    "Weekly Study Time",
+    min_value=1,
+    max_value=4,
+    value=2
+)
+
+
+failures = st.sidebar.slider(
+    "Previous Failures",
+    min_value=0,
+    max_value=3,
+    value=0
+)
+
+
+absences = st.sidebar.slider(
+    "Absences",
+    min_value=0,
+    max_value=75,
+    value=4
+)
+
+
+G1 = st.sidebar.slider(
+    "First Period Grade (G1)",
+    min_value=0,
+    max_value=20,
+    value=12
+)
+
+
+G2 = st.sidebar.slider(
+    "Second Period Grade (G2)",
+    min_value=0,
+    max_value=20,
+    value=13
+)
+
+
+Medu = st.sidebar.slider(
+    "Mother's Education",
+    min_value=0,
+    max_value=4,
+    value=3
+)
+
+
+Fedu = st.sidebar.slider(
+    "Father's Education",
+    min_value=0,
+    max_value=4,
+    value=2
+)
+
+
+freetime = st.sidebar.slider(
+    "Free Time",
+    min_value=1,
+    max_value=5,
+    value=3
+)
+
+
+goout = st.sidebar.slider(
+    "Going Out",
+    min_value=1,
+    max_value=5,
+    value=3
+)
+
+
+health = st.sidebar.slider(
+    "Health",
+    min_value=1,
+    max_value=5,
+    value=4
 )
 
 
 # ==================================================
-# PAGE 1 — GRADE PREDICTION
+# INPUT DATA
 # ==================================================
 
-if page == "🎯 Grade Prediction":
-
-    st.header("👤 Student Information")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        age = st.number_input(
-            "Age",
-            min_value=15,
-            max_value=25,
-            value=17
-        )
-
-    with col2:
-        studytime = st.slider(
-            "Weekly Study Time",
-            min_value=1,
-            max_value=4,
-            value=2
-        )
-
-    with col3:
-        failures = st.number_input(
-            "Previous Failures",
-            min_value=0,
-            max_value=3,
-            value=0
-        )
-
-
-    # ==================================================
-    # ACADEMIC INFORMATION
-    # ==================================================
-
-    st.header("📚 Academic Information")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        absences = st.number_input(
-            "School Absences",
-            min_value=0,
-            max_value=100,
-            value=4
-        )
-
-    with col2:
-        G1 = st.number_input(
-            "First Period Grade (G1)",
-            min_value=0,
-            max_value=20,
-            value=12
-        )
-
-    with col3:
-        G2 = st.number_input(
-            "Second Period Grade (G2)",
-            min_value=0,
-            max_value=20,
-            value=13
-        )
-
-
-    # ==================================================
-    # FAMILY AND LIFESTYLE
-    # ==================================================
-
-    st.header("🏠 Family & Lifestyle")
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        Medu = st.slider(
-            "Mother's Education",
-            min_value=0,
-            max_value=4,
-            value=2
-        )
-
-    with col2:
-        Fedu = st.slider(
-            "Father's Education",
-            min_value=0,
-            max_value=4,
-            value=2
-        )
-
-    with col3:
-        freetime = st.slider(
-            "Free Time",
-            min_value=1,
-            max_value=5,
-            value=3
-        )
-
-    with col4:
-        goout = st.slider(
-            "Going Out",
-            min_value=1,
-            max_value=5,
-            value=3
-        )
-
-    health = st.slider(
-        "Health Status",
-        min_value=1,
-        max_value=5,
-        value=3
-    )
-
-
-    st.divider()
-
-
-    # ==================================================
-    # PREDICTION
-    # ==================================================
-
-    if st.button(
-        "🎯 Predict Final Grade",
-        type="primary",
-        use_container_width=True
-    ):
-
-        input_data = pd.DataFrame(
-            [[
-                age,
-                studytime,
-                failures,
-                absences,
-                G1,
-                G2,
-                Medu,
-                Fedu,
-                freetime,
-                goout,
-                health
-            ]],
-            columns=[
-                "age",
-                "studytime",
-                "failures",
-                "absences",
-                "G1",
-                "G2",
-                "Medu",
-                "Fedu",
-                "freetime",
-                "goout",
-                "health"
-            ]
-        )
-
-        prediction = model.predict(
-            input_data
-        )[0]
-
-        # Keep prediction within valid grade range
-        prediction = max(
-            0,
-            min(20, prediction)
-        )
-
-        percentage = (
-            prediction / 20
-        ) * 100
-
-
-        # ==================================================
-        # PERFORMANCE LEVEL
-        # ==================================================
-
-        if prediction >= 16:
-            performance_level = "Excellent"
-
-        elif prediction >= 12:
-            performance_level = "Good"
-
-        elif prediction >= 10:
-            performance_level = "Average"
-
-        else:
-            performance_level = "Needs Improvement"
-
-
-        # ==================================================
-        # SAVE PREDICTION TO HISTORY
-        # ==================================================
-
-        prediction_record = {
-            "Age": age,
-            "Study Time": studytime,
-            "Failures": failures,
-            "Absences": absences,
-            "G1": G1,
-            "G2": G2,
-            "Mother Education": Medu,
-            "Father Education": Fedu,
-            "Free Time": freetime,
-            "Going Out": goout,
-            "Health": health,
-            "Predicted Grade": round(
-                prediction,
-                2
-            ),
-            "Percentage": round(
-                percentage,
-                2
-            ),
-            "Performance Level": performance_level
-        }
-
-        st.session_state.prediction_history.append(
-            prediction_record
-        )
-
-
-        # ==================================================
-        # PREDICTION RESULT
-        # ==================================================
-
-        st.success(
-            "Prediction generated successfully!"
-        )
-
-        st.subheader(
-            "🎯 Prediction Result"
-        )
-
-        result_col1, result_col2, result_col3 = st.columns(3)
-
-        with result_col1:
-
-            st.metric(
-                "Predicted Final Grade",
-                f"{prediction:.2f} / 20"
-            )
-
-        with result_col2:
-
-            st.metric(
-                "Equivalent Percentage",
-                f"{percentage:.1f}%"
-            )
-
-        with result_col3:
-
-            st.metric(
-                "Performance Level",
-                performance_level
-            )
-
-
-        # ==================================================
-        # PROGRESS BAR
-        # ==================================================
-
-        st.markdown(
-            "**Predicted Grade Progress**"
-        )
-
-        st.progress(
-            prediction / 20
-        )
-
-        st.caption(
-            f"{prediction:.2f} out of 20 marks"
-        )
-
-
-        # ==================================================
-        # RECOMMENDATION
-        # ==================================================
-
-        st.subheader(
-            "💡 Recommendation"
-        )
-
-        if prediction >= 16:
-
-            st.success(
-                """
-                🌟 Excellent predicted performance!
-
-                The student is predicted to achieve a strong
-                final grade. Maintaining consistent study habits
-                should help sustain this performance.
-                """
-            )
-
-        elif prediction >= 12:
-
-            st.info(
-                """
-                👍 Good predicted performance!
-
-                The student is predicted to perform reasonably
-                well. Consistent revision and regular attendance
-                may help improve the final result further.
-                """
-            )
-
-        elif prediction >= 10:
-
-            st.warning(
-                """
-                📚 Moderate predicted performance.
-
-                Additional study time, improved attendance,
-                and focused preparation may help increase
-                the predicted final grade.
-                """
-            )
-
-        else:
-
-            st.error(
-                """
-                ⚠️ Low predicted performance.
-
-                The model suggests that additional academic
-                support, improved study habits, and consistent
-                preparation may be beneficial.
-                """
-            )
-
-
-    # ==================================================
-    # MODEL INFORMATION
-    # ==================================================
-
-    st.divider()
-
-    st.header(
-        "🤖 Model Information"
-    )
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-
-        st.metric(
-            "Model",
-            "Random Forest"
-        )
-
-    with col2:
-
-        st.metric(
-            "R² Score",
-            "0.85"
-        )
-
-    with col3:
-
-        st.metric(
-            "MAE",
-            "1.08"
-        )
-
-    st.caption(
-        "Random Forest model trained on 395 student records "
-        "using 11 selected features."
-    )
+input_data = pd.DataFrame(
+    {
+        "age": [age],
+        "studytime": [studytime],
+        "failures": [failures],
+        "absences": [absences],
+        "G1": [G1],
+        "G2": [G2],
+        "Medu": [Medu],
+        "Fedu": [Fedu],
+        "freetime": [freetime],
+        "goout": [goout],
+        "health": [health]
+    }
+)
 
 
 # ==================================================
-# PAGE 2 — DATA ANALYSIS
+# PREDICTION
 # ==================================================
 
-elif page == "📊 Data Analysis":
+if st.button(
+    "🔮 Predict Final Grade",
+    use_container_width=True
+):
 
-    st.header(
-        "📊 Exploratory Data Analysis"
-    )
+    prediction = model.predict(
+        input_data
+    )[0]
 
-    st.markdown(
-        """
-        Explore the student dataset and examine relationships
-        between academic performance and student characteristics.
-        """
-    )
-
-
-    # ==================================================
-    # DATASET OVERVIEW
-    # ==================================================
-
-    st.subheader(
-        "📋 Dataset Overview"
-    )
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-
-        st.metric(
-            "Students",
-            data.shape[0]
-        )
-
-    with col2:
-
-        st.metric(
-            "Features",
-            data.shape[1]
-        )
-
-    with col3:
-
-        st.metric(
-            "Average Grade",
-            f"{data['G3'].mean():.2f}"
-        )
-
-    with col4:
-
-        st.metric(
-            "Median Grade",
-            f"{data['G3'].median():.0f}"
-        )
-
-
-    st.divider()
-
-
-    # ==================================================
-    # FINAL GRADE DISTRIBUTION
-    # ==================================================
-
-    st.subheader(
-        "📈 Final Grade Distribution"
-    )
-
-    fig, ax = plt.subplots(
-        figsize=(9, 5)
-    )
-
-    ax.hist(
-        data["G3"],
-        bins=11,
-        edgecolor="black"
-    )
-
-    ax.set_title(
-        "Distribution of Final Grades"
-    )
-
-    ax.set_xlabel(
-        "Final Grade (G3)"
-    )
-
-    ax.set_ylabel(
-        "Number of Students"
-    )
-
-    st.pyplot(fig)
-
-
-    # ==================================================
-    # STUDY TIME VS FINAL GRADE
-    # ==================================================
-
-    st.subheader(
-        "📚 Study Time vs Final Grade"
-    )
-
-    studytime_avg = (
-        data.groupby("studytime")["G3"]
-        .mean()
-    )
-
-    fig, ax = plt.subplots(
-        figsize=(9, 5)
-    )
-
-    ax.bar(
-        studytime_avg.index.astype(str),
-        studytime_avg.values
-    )
-
-    ax.set_xlabel(
-        "Study Time Level"
-    )
-
-    ax.set_ylabel(
-        "Average Final Grade"
-    )
-
-    ax.set_title(
-        "Average Final Grade by Study Time"
-    )
-
-    st.pyplot(fig)
-
-
-    # ==================================================
-    # FAILURES VS FINAL GRADE
-    # ==================================================
-
-    st.subheader(
-        "⚠️ Previous Failures vs Final Grade"
-    )
-
-    failures_avg = (
-        data.groupby("failures")["G3"]
-        .mean()
-    )
-
-    fig, ax = plt.subplots(
-        figsize=(9, 5)
-    )
-
-    ax.bar(
-        failures_avg.index.astype(str),
-        failures_avg.values
-    )
-
-    ax.set_xlabel(
-        "Previous Failures"
-    )
-
-    ax.set_ylabel(
-        "Average Final Grade"
-    )
-
-    ax.set_title(
-        "Average Final Grade by Previous Failures"
-    )
-
-    st.pyplot(fig)
-
-
-    # ==================================================
-    # MODEL COMPARISON
-    # ==================================================
-
-    st.divider()
-
-    st.subheader(
-        "🤖 Model Performance Comparison"
-    )
-
-    model_results = pd.DataFrame({
-        "Model": [
-            "Linear Regression",
-            "Gradient Boosting",
-            "Random Forest"
-        ],
-        "MAE": [
-            1.38,
-            1.16,
-            1.08
-        ],
-        "RMSE": [
-            2.16,
-            1.85,
-            1.78
-        ],
-        "R² Score": [
-            0.77,
-            0.83,
-            0.85
-        ]
-    })
-
-    st.dataframe(
-        model_results,
-        use_container_width=True,
-        hide_index=True
-    )
-
-    st.markdown(
-        """
-        **🏆 Best Model: Random Forest**
-
-        Random Forest achieved the highest R² score (**0.85**)
-        and the lowest MAE (**1.08**) among the three models.
-        """
-    )
-
-    fig, ax = plt.subplots(
-        figsize=(9, 5)
-    )
-
-    ax.bar(
-        model_results["Model"],
-        model_results["R² Score"]
-    )
-
-    ax.set_title(
-        "Model R² Score Comparison"
-    )
-
-    ax.set_xlabel(
-        "Model"
-    )
-
-    ax.set_ylabel(
-        "R² Score"
-    )
-
-    ax.set_ylim(
+    prediction = np.clip(
+        prediction,
         0,
-        1
+        20
     )
 
-    st.pyplot(fig)
+    st.session_state["prediction"] = prediction
 
 
-    # ==================================================
-    # FEATURE IMPORTANCE
-    # ==================================================
+# ==================================================
+# DISPLAY PREDICTION
+# ==================================================
+
+if "prediction" in st.session_state:
+
+    prediction = st.session_state["prediction"]
 
     st.divider()
 
     st.subheader(
-        "🔍 Feature Importance"
+        "🎯 Prediction Result"
     )
 
-    st.markdown(
-        """
-        Feature importance shows which variables contributed
-        most strongly to the Random Forest model's predictions.
-        """
-    )
+    col1, col2, col3 = st.columns(3)
 
-    feature_names = model.feature_names_in_
+    with col1:
 
-    feature_importance = model.feature_importances_
+        st.metric(
+            "Predicted Final Grade",
+            f"{prediction:.2f} / 20"
+        )
 
-    importance_df = pd.DataFrame({
-        "Feature": feature_names,
-        "Importance": feature_importance
-    }).sort_values(
-        "Importance",
-        ascending=False
-    )
+    with col2:
 
-    st.dataframe(
-        importance_df,
-        use_container_width=True,
-        hide_index=True
-    )
+        percentage = (prediction / 20) * 100
 
-    fig, ax = plt.subplots(
-        figsize=(9, 6)
-    )
+        st.metric(
+            "Estimated Percentage",
+            f"{percentage:.1f}%"
+        )
 
-    ax.barh(
-        importance_df["Feature"],
-        importance_df["Importance"]
-    )
+    with col3:
 
-    ax.set_title(
-        "Random Forest Feature Importance"
-    )
+        if prediction >= 16:
 
-    ax.set_xlabel(
-        "Importance"
-    )
+            performance = "Excellent"
 
-    ax.set_ylabel(
-        "Feature"
-    )
+        elif prediction >= 12:
 
-    ax.invert_yaxis()
+            performance = "Good"
 
-    st.pyplot(fig)
+        elif prediction >= 10:
+
+            performance = "Average"
+
+        else:
+
+            performance = "Needs Improvement"
+
+        st.metric(
+            "Performance Level",
+            performance
+        )
 
 
-    # ==================================================
-    # DATASET PREVIEW
-    # ==================================================
+# ==================================================
+# RECOMMENDATIONS
+# ==================================================
 
-    st.divider()
+if "prediction" in st.session_state:
+
+    prediction = st.session_state["prediction"]
 
     st.subheader(
-        "🔎 Dataset Preview"
+        "💡 Recommendations"
     )
 
-    st.dataframe(
-        data.head(20),
+    recommendations = []
+
+    if studytime <= 2:
+
+        recommendations.append(
+            "📚 Consider increasing weekly study time."
+        )
+
+    if failures > 0:
+
+        recommendations.append(
+            "🎯 Focus on subjects where previous failures occurred."
+        )
+
+    if absences > 10:
+
+        recommendations.append(
+            "🏫 Reducing absences may help improve academic performance."
+        )
+
+    if G1 < 10:
+
+        recommendations.append(
+            "📝 Strengthen preparation for upcoming assessments."
+        )
+
+    if G2 < 10:
+
+        recommendations.append(
+            "📈 Focus on improving recent academic performance."
+        )
+
+    if goout >= 4:
+
+        recommendations.append(
+            "⚖️ Maintain a healthy balance between social activities and study."
+        )
+
+    if not recommendations:
+
+        recommendations.append(
+            "🌟 Your current academic indicators look positive. Keep it up!"
+        )
+
+    for recommendation in recommendations:
+
+        st.write(
+            recommendation
+        )
+
+
+# ==================================================
+# MODEL EVALUATION
+# ==================================================
+
+st.divider()
+
+st.header(
+    "📊 Model Evaluation"
+)
+
+st.write(
+    """
+    The Random Forest model was evaluated on a held-out test set
+    containing 79 students.
+    """
+)
+
+
+# Metrics
+
+metric1, metric2, metric3 = st.columns(3)
+
+
+with metric1:
+
+    st.metric(
+        "MAE",
+        "1.08"
+    )
+
+
+with metric2:
+
+    st.metric(
+        "RMSE",
+        "1.78"
+    )
+
+
+with metric3:
+
+    st.metric(
+        "R² Score",
+        "0.85"
+    )
+
+
+st.write(
+    """
+    **Interpretation:** The model explains approximately 85% of
+    the variation in final grades. On average, predictions differ
+    from actual grades by about 1.08 points.
+    """
+)
+
+
+# ==================================================
+# ACTUAL VS PREDICTED
+# ==================================================
+
+st.subheader(
+    "🎯 Actual vs Predicted Grades"
+)
+
+actual_predicted_path = (
+    "reports/figures/actual_vs_predicted.png"
+)
+
+if os.path.exists(actual_predicted_path):
+
+    st.image(
+        actual_predicted_path,
         use_container_width=True
     )
 
+else:
 
-    # ==================================================
-    # STATISTICAL SUMMARY
-    # ==================================================
-
-    st.subheader(
-        "📊 Statistical Summary"
+    st.warning(
+        "Actual vs Predicted plot not found."
     )
 
-    st.dataframe(
-        data.describe(),
+
+# ==================================================
+# RESIDUAL ANALYSIS
+# ==================================================
+
+st.subheader(
+    "📉 Prediction Residuals"
+)
+
+residual_path = (
+    "reports/figures/residual_plot.png"
+)
+
+if os.path.exists(residual_path):
+
+    st.image(
+        residual_path,
+        use_container_width=True
+    )
+
+else:
+
+    st.warning(
+        "Residual plot not found."
+    )
+
+
+# ==================================================
+# ERROR DISTRIBUTION
+# ==================================================
+
+st.subheader(
+    "📊 Prediction Error Distribution"
+)
+
+error_path = (
+    "reports/figures/error_distribution.png"
+)
+
+if os.path.exists(error_path):
+
+    st.image(
+        error_path,
+        use_container_width=True
+    )
+
+else:
+
+    st.warning(
+        "Error distribution plot not found."
+    )
+
+
+# ==================================================
+# EDA VISUALIZATIONS
+# ==================================================
+
+st.divider()
+
+st.header(
+    "🔍 Exploratory Data Analysis"
+)
+
+
+col1, col2 = st.columns(2)
+
+
+with col1:
+
+    st.subheader(
+        "Final Grade Distribution"
+    )
+
+    path = (
+        "reports/figures/final_grade_distribution.png"
+    )
+
+    if os.path.exists(path):
+
+        st.image(
+            path,
+            use_container_width=True
+        )
+
+
+with col2:
+
+    st.subheader(
+        "Study Time vs Final Grade"
+    )
+
+    path = (
+        "reports/figures/studytime_vs_grade.png"
+    )
+
+    if os.path.exists(path):
+
+        st.image(
+            path,
+            use_container_width=True
+        )
+
+
+st.subheader(
+    "Previous Failures vs Final Grade"
+)
+
+path = (
+    "reports/figures/failures_vs_grade.png"
+)
+
+if os.path.exists(path):
+
+    st.image(
+        path,
         use_container_width=True
     )
 
 
 # ==================================================
-# PAGE 3 — PREDICTION HISTORY
+# FEATURE INFORMATION
 # ==================================================
 
-elif page == "🧾 Prediction History":
+st.divider()
 
-    st.header(
-        "🧾 Prediction History"
-    )
+st.header(
+    "📌 Features Used by the Model"
+)
 
-    st.markdown(
-        """
-        View predictions generated during the current
-        Streamlit session.
-        """
-    )
+feature_data = pd.DataFrame(
+    {
+        "Feature": [
+            "age",
+            "studytime",
+            "failures",
+            "absences",
+            "G1",
+            "G2",
+            "Medu",
+            "Fedu",
+            "freetime",
+            "goout",
+            "health"
+        ],
+        "Description": [
+            "Student age",
+            "Weekly study time",
+            "Number of previous failures",
+            "Number of school absences",
+            "First period grade",
+            "Second period grade",
+            "Mother's education level",
+            "Father's education level",
+            "Free time after school",
+            "Frequency of going out",
+            "Current health status"
+        ]
+    }
+)
 
-
-    # ==================================================
-    # CHECK FOR HISTORY
-    # ==================================================
-
-    if len(
-        st.session_state.prediction_history
-    ) == 0:
-
-        st.info(
-            """
-            No predictions have been recorded yet.
-
-            Go to **🎯 Grade Prediction**, enter student
-            information, and click **Predict Final Grade**.
-            """
-        )
-
-    else:
-
-        history_df = pd.DataFrame(
-            st.session_state.prediction_history
-        )
-
-
-        # ==================================================
-        # HISTORY SUMMARY
-        # ==================================================
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-
-            st.metric(
-                "Total Predictions",
-                len(history_df)
-            )
-
-        with col2:
-
-            st.metric(
-                "Average Predicted Grade",
-                f"{history_df['Predicted Grade'].mean():.2f}"
-            )
-
-        with col3:
-
-            st.metric(
-                "Highest Prediction",
-                f"{history_df['Predicted Grade'].max():.2f}"
-            )
-
-
-        st.divider()
-
-
-        # ==================================================
-        # HISTORY TABLE
-        # ==================================================
-
-        st.subheader(
-            "📋 Prediction Records"
-        )
-
-        st.dataframe(
-            history_df,
-            use_container_width=True,
-            hide_index=True
-        )
-
-
-        # ==================================================
-        # PREDICTION VISUALIZATION
-        # ==================================================
-
-        st.subheader(
-            "📈 Prediction History Chart"
-        )
-
-        fig, ax = plt.subplots(
-            figsize=(10, 5)
-        )
-
-        ax.plot(
-            range(
-                1,
-                len(history_df) + 1
-            ),
-            history_df["Predicted Grade"],
-            marker="o"
-        )
-
-        ax.set_title(
-            "Predicted Grade Across Predictions"
-        )
-
-        ax.set_xlabel(
-            "Prediction Number"
-        )
-
-        ax.set_ylabel(
-            "Predicted Grade"
-        )
-
-        ax.set_ylim(
-            0,
-            20
-        )
-
-        st.pyplot(fig)
-
-
-        # ==================================================
-        # DOWNLOAD HISTORY
-        # ==================================================
-
-        st.subheader(
-            "📥 Export Prediction History"
-        )
-
-        csv_data = history_df.to_csv(
-            index=False
-        )
-
-        st.download_button(
-            label="📥 Download Prediction History CSV",
-            data=csv_data,
-            file_name="prediction_history.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-
-
-        # ==================================================
-        # CLEAR HISTORY
-        # ==================================================
-
-        st.divider()
-
-        if st.button(
-            "🗑️ Clear Prediction History",
-            use_container_width=True
-        ):
-
-            st.session_state.prediction_history = []
-
-            st.rerun()
+st.dataframe(
+    feature_data,
+    use_container_width=True,
+    hide_index=True
+)
 
 
 # ==================================================
@@ -960,6 +555,7 @@ elif page == "🧾 Prediction History":
 st.divider()
 
 st.caption(
-    "🎓 Student Performance Analyzer | "
-    "Machine Learning Project"
+    "Student Performance Analyzer | "
+    "Machine Learning Project | "
+    "Random Forest Regression"
 )
