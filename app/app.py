@@ -39,6 +39,14 @@ data = load_data()
 
 
 # ==================================================
+# SESSION STATE — PREDICTION HISTORY
+# ==================================================
+
+if "prediction_history" not in st.session_state:
+    st.session_state.prediction_history = []
+
+
+# ==================================================
 # HEADER
 # ==================================================
 
@@ -67,7 +75,8 @@ page = st.sidebar.radio(
     "Go to",
     [
         "🎯 Grade Prediction",
-        "📊 Data Analysis"
+        "📊 Data Analysis",
+        "🧾 Prediction History"
     ]
 )
 
@@ -240,7 +249,58 @@ if page == "🎯 Grade Prediction":
             min(20, prediction)
         )
 
-        percentage = (prediction / 20) * 100
+        percentage = (
+            prediction / 20
+        ) * 100
+
+
+        # ==================================================
+        # PERFORMANCE LEVEL
+        # ==================================================
+
+        if prediction >= 16:
+            performance_level = "Excellent"
+
+        elif prediction >= 12:
+            performance_level = "Good"
+
+        elif prediction >= 10:
+            performance_level = "Average"
+
+        else:
+            performance_level = "Needs Improvement"
+
+
+        # ==================================================
+        # SAVE PREDICTION TO HISTORY
+        # ==================================================
+
+        prediction_record = {
+            "Age": age,
+            "Study Time": studytime,
+            "Failures": failures,
+            "Absences": absences,
+            "G1": G1,
+            "G2": G2,
+            "Mother Education": Medu,
+            "Father Education": Fedu,
+            "Free Time": freetime,
+            "Going Out": goout,
+            "Health": health,
+            "Predicted Grade": round(
+                prediction,
+                2
+            ),
+            "Percentage": round(
+                percentage,
+                2
+            ),
+            "Performance Level": performance_level
+        }
+
+        st.session_state.prediction_history.append(
+            prediction_record
+        )
 
 
         # ==================================================
@@ -251,7 +311,9 @@ if page == "🎯 Grade Prediction":
             "Prediction generated successfully!"
         )
 
-        st.subheader("🎯 Prediction Result")
+        st.subheader(
+            "🎯 Prediction Result"
+        )
 
         result_col1, result_col2, result_col3 = st.columns(3)
 
@@ -270,15 +332,6 @@ if page == "🎯 Grade Prediction":
             )
 
         with result_col3:
-
-            if prediction >= 16:
-                performance_level = "Excellent"
-            elif prediction >= 12:
-                performance_level = "Good"
-            elif prediction >= 10:
-                performance_level = "Average"
-            else:
-                performance_level = "Needs Improvement"
 
             st.metric(
                 "Performance Level",
@@ -307,7 +360,9 @@ if page == "🎯 Grade Prediction":
         # RECOMMENDATION
         # ==================================================
 
-        st.subheader("💡 Recommendation")
+        st.subheader(
+            "💡 Recommendation"
+        )
 
         if prediction >= 16:
 
@@ -364,7 +419,9 @@ if page == "🎯 Grade Prediction":
 
     st.divider()
 
-    st.header("🤖 Model Information")
+    st.header(
+        "🤖 Model Information"
+    )
 
     col1, col2, col3 = st.columns(3)
 
@@ -399,9 +456,11 @@ if page == "🎯 Grade Prediction":
 # PAGE 2 — DATA ANALYSIS
 # ==================================================
 
-else:
+elif page == "📊 Data Analysis":
 
-    st.header("📊 Exploratory Data Analysis")
+    st.header(
+        "📊 Exploratory Data Analysis"
+    )
 
     st.markdown(
         """
@@ -726,6 +785,172 @@ else:
         data.describe(),
         use_container_width=True
     )
+
+
+# ==================================================
+# PAGE 3 — PREDICTION HISTORY
+# ==================================================
+
+elif page == "🧾 Prediction History":
+
+    st.header(
+        "🧾 Prediction History"
+    )
+
+    st.markdown(
+        """
+        View predictions generated during the current
+        Streamlit session.
+        """
+    )
+
+
+    # ==================================================
+    # CHECK FOR HISTORY
+    # ==================================================
+
+    if len(
+        st.session_state.prediction_history
+    ) == 0:
+
+        st.info(
+            """
+            No predictions have been recorded yet.
+
+            Go to **🎯 Grade Prediction**, enter student
+            information, and click **Predict Final Grade**.
+            """
+        )
+
+    else:
+
+        history_df = pd.DataFrame(
+            st.session_state.prediction_history
+        )
+
+
+        # ==================================================
+        # HISTORY SUMMARY
+        # ==================================================
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+
+            st.metric(
+                "Total Predictions",
+                len(history_df)
+            )
+
+        with col2:
+
+            st.metric(
+                "Average Predicted Grade",
+                f"{history_df['Predicted Grade'].mean():.2f}"
+            )
+
+        with col3:
+
+            st.metric(
+                "Highest Prediction",
+                f"{history_df['Predicted Grade'].max():.2f}"
+            )
+
+
+        st.divider()
+
+
+        # ==================================================
+        # HISTORY TABLE
+        # ==================================================
+
+        st.subheader(
+            "📋 Prediction Records"
+        )
+
+        st.dataframe(
+            history_df,
+            use_container_width=True,
+            hide_index=True
+        )
+
+
+        # ==================================================
+        # PREDICTION VISUALIZATION
+        # ==================================================
+
+        st.subheader(
+            "📈 Prediction History Chart"
+        )
+
+        fig, ax = plt.subplots(
+            figsize=(10, 5)
+        )
+
+        ax.plot(
+            range(
+                1,
+                len(history_df) + 1
+            ),
+            history_df["Predicted Grade"],
+            marker="o"
+        )
+
+        ax.set_title(
+            "Predicted Grade Across Predictions"
+        )
+
+        ax.set_xlabel(
+            "Prediction Number"
+        )
+
+        ax.set_ylabel(
+            "Predicted Grade"
+        )
+
+        ax.set_ylim(
+            0,
+            20
+        )
+
+        st.pyplot(fig)
+
+
+        # ==================================================
+        # DOWNLOAD HISTORY
+        # ==================================================
+
+        st.subheader(
+            "📥 Export Prediction History"
+        )
+
+        csv_data = history_df.to_csv(
+            index=False
+        )
+
+        st.download_button(
+            label="📥 Download Prediction History CSV",
+            data=csv_data,
+            file_name="prediction_history.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+
+        # ==================================================
+        # CLEAR HISTORY
+        # ==================================================
+
+        st.divider()
+
+        if st.button(
+            "🗑️ Clear Prediction History",
+            use_container_width=True
+        ):
+
+            st.session_state.prediction_history = []
+
+            st.rerun()
 
 
 # ==================================================
