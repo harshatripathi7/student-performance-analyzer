@@ -1,0 +1,38 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Python build files
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Temporary files
+*.tmp
+*.swp
+# Dataset archives and temporary files
+*.zip
+*.old
+data/.DS_Store
+data/raw/.student.zip_old
