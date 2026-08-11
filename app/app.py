@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import joblib
 import os
+import shap
+import matplotlib.pyplot as plt
 
 
 # ============================================================
@@ -22,6 +24,25 @@ st.set_page_config(
 MODEL_PATH = "models/student_performance_model.pkl"
 DATA_PATH = "data/raw/student-mat.csv"
 FIGURES_PATH = "reports/figures"
+
+
+# ============================================================
+# FEATURES
+# ============================================================
+
+FEATURES = [
+    "age",
+    "studytime",
+    "failures",
+    "absences",
+    "G1",
+    "G2",
+    "Medu",
+    "Fedu",
+    "freetime",
+    "goout",
+    "health"
+]
 
 
 # ============================================================
@@ -49,15 +70,28 @@ data = load_data()
 
 
 # ============================================================
-# HEADER
+# LOAD SHAP EXPLAINER
+# ============================================================
+
+@st.cache_resource
+def load_shap_explainer():
+    return shap.TreeExplainer(model)
+
+
+explainer = load_shap_explainer()
+
+
+# ============================================================
+# PAGE HEADER
 # ============================================================
 
 st.title("🎓 Student Performance Analyzer")
 
 st.markdown(
     """
-    This machine learning application predicts a student's final grade
-    out of **20** using academic, demographic, and lifestyle-related factors.
+    An interactive machine learning application that predicts a
+    student's final academic grade and explains the factors influencing
+    the prediction.
     """
 )
 
@@ -68,11 +102,11 @@ st.divider()
 # SIDEBAR
 # ============================================================
 
-st.sidebar.header("📚 About the Model")
+st.sidebar.header("🤖 Model Information")
 
 st.sidebar.markdown(
     """
-    **Algorithm:** Random Forest Regression
+    **Model:** Random Forest Regression
 
     **R² Score:** 0.85
 
@@ -80,20 +114,20 @@ st.sidebar.markdown(
 
     **RMSE:** 1.78
 
-    The model was trained using 395 student records.
+    **Dataset:** 395 students
     """
 )
 
 st.sidebar.divider()
 
 st.sidebar.info(
-    "The prediction is an estimate based on patterns learned from the "
-    "student performance dataset."
+    "Predictions are estimates generated from patterns learned from "
+    "the student performance dataset."
 )
 
 
 # ============================================================
-# STUDENT INPUT
+# INPUT SECTION
 # ============================================================
 
 st.header("📝 Enter Student Information")
@@ -116,8 +150,12 @@ with col1:
         min_value=1,
         max_value=4,
         value=2,
-        help="1 = less than 2 hours, 2 = 2–5 hours, "
-             "3 = 5–10 hours, 4 = more than 10 hours"
+        help=(
+            "1 = less than 2 hours, "
+            "2 = 2–5 hours, "
+            "3 = 5–10 hours, "
+            "4 = more than 10 hours"
+        )
     )
 
     failures = st.number_input(
@@ -159,18 +197,14 @@ with col2:
         "Mother's Education",
         min_value=0,
         max_value=4,
-        value=2,
-        help="0 = none, 1 = primary, 2 = 5th–9th grade, "
-             "3 = secondary, 4 = higher education"
+        value=2
     )
 
     fedu = st.slider(
         "Father's Education",
         min_value=0,
         max_value=4,
-        value=2,
-        help="0 = none, 1 = primary, 2 = 5th–9th grade, "
-             "3 = secondary, 4 = higher education"
+        value=2
     )
 
 
@@ -227,9 +261,12 @@ if predict_button:
         "health": [health]
     })
 
+    # --------------------------------------------------------
+    # PREDICTION
+    # --------------------------------------------------------
+
     prediction = model.predict(input_data)[0]
 
-    # Keep prediction within the valid grade range
     prediction = max(0, min(20, prediction))
 
     percentage = (prediction / 20) * 100
@@ -251,6 +288,7 @@ if predict_button:
             "Estimated Percentage",
             f"{percentage:.1f}%"
         )
+
 
     # --------------------------------------------------------
     # PERFORMANCE INTERPRETATION
@@ -286,8 +324,9 @@ if predict_button:
             "The student may benefit from additional academic support."
         )
 
+
     # --------------------------------------------------------
-    # RECOMMENDATIONS
+    # PERSONALIZED RECOMMENDATIONS
     # --------------------------------------------------------
 
     st.subheader("💡 Personalized Recommendations")
@@ -295,47 +334,214 @@ if predict_button:
     recommendations = []
 
     if studytime <= 2:
+
         recommendations.append(
             "📖 Increase weekly study time and maintain a consistent study schedule."
         )
 
     if failures > 0:
+
         recommendations.append(
             "🎯 Focus on subjects where previous difficulties occurred."
         )
 
     if absences > 10:
+
         recommendations.append(
             "🏫 Reduce unnecessary absences and attend classes consistently."
         )
 
     if g1 < 10:
+
         recommendations.append(
             "📝 Strengthen fundamentals to improve performance in upcoming assessments."
         )
 
     if g2 < 10:
+
         recommendations.append(
             "📈 Focus strongly on improving current academic performance."
         )
 
     if goout >= 4:
+
         recommendations.append(
             "⏰ Balance social activities with dedicated study time."
         )
 
     if health <= 2:
+
         recommendations.append(
             "❤️ Pay attention to health and maintain healthy daily routines."
         )
 
     if not recommendations:
+
         recommendations.append(
             "🌟 Keep maintaining the current academic habits and consistency."
         )
 
     for recommendation in recommendations:
+
         st.write(recommendation)
+
+
+    # ========================================================
+    # SHAP INDIVIDUAL EXPLANATION
+    # ========================================================
+
+    st.divider()
+
+    st.header("🧠 Why Did the Model Make This Prediction?")
+
+    st.markdown(
+        """
+        SHAP (SHapley Additive exPlanations) shows how each input
+        feature influenced this individual prediction.
+
+        **Positive SHAP values** push the prediction higher.
+
+        **Negative SHAP values** push the prediction lower.
+        """
+    )
+
+    # Calculate SHAP values for the entered student
+
+    shap_values = explainer.shap_values(input_data)
+
+    # Handle different SHAP output formats
+    if isinstance(shap_values, list):
+
+        individual_shap = shap_values[0][0]
+
+    else:
+
+        individual_shap = shap_values[0]
+
+    shap_df = pd.DataFrame({
+        "Feature": FEATURES,
+        "Value": input_data.iloc[0].values,
+        "SHAP Value": individual_shap
+    })
+
+    shap_df["Absolute Impact"] = (
+        shap_df["SHAP Value"].abs()
+    )
+
+    shap_df = shap_df.sort_values(
+        "Absolute Impact",
+        ascending=False
+    )
+
+    # --------------------------------------------------------
+    # TOP POSITIVE / NEGATIVE FACTORS
+    # --------------------------------------------------------
+
+    positive_factors = shap_df[
+        shap_df["SHAP Value"] > 0
+    ].head(3)
+
+    negative_factors = shap_df[
+        shap_df["SHAP Value"] < 0
+    ].sort_values(
+        "SHAP Value"
+    ).head(3)
+
+    explanation_col1, explanation_col2 = st.columns(2)
+
+    with explanation_col1:
+
+        st.subheader("🟢 Factors Increasing Prediction")
+
+        if len(positive_factors) == 0:
+
+            st.write("No major positive contributors.")
+
+        else:
+
+            for _, row in positive_factors.iterrows():
+
+                st.write(
+                    f"**{row['Feature']}** "
+                    f"({row['Value']}) → "
+                    f"+{row['SHAP Value']:.3f}"
+                )
+
+
+    with explanation_col2:
+
+        st.subheader("🔴 Factors Decreasing Prediction")
+
+        if len(negative_factors) == 0:
+
+            st.write("No major negative contributors.")
+
+        else:
+
+            for _, row in negative_factors.iterrows():
+
+                st.write(
+                    f"**{row['Feature']}** "
+                    f"({row['Value']}) → "
+                    f"{row['SHAP Value']:.3f}"
+                )
+
+
+    # --------------------------------------------------------
+    # SHAP WATERFALL
+    # --------------------------------------------------------
+
+    st.subheader("📊 Individual Prediction Explanation")
+
+    try:
+
+        sample_explanation = shap.Explanation(
+            values=individual_shap,
+            base_values=explainer.expected_value,
+            data=input_data.iloc[0].values,
+            feature_names=FEATURES
+        )
+
+        fig = plt.figure()
+
+        shap.plots.waterfall(
+            sample_explanation,
+            show=False
+        )
+
+        st.pyplot(
+            fig,
+            use_container_width=True
+        )
+
+        plt.close(fig)
+
+    except Exception as error:
+
+        st.warning(
+            f"Could not generate the interactive SHAP waterfall: {error}"
+        )
+
+
+    # --------------------------------------------------------
+    # SHAP TABLE
+    # --------------------------------------------------------
+
+    with st.expander("🔎 View Detailed SHAP Values"):
+
+        display_df = shap_df[
+            ["Feature", "Value", "SHAP Value"]
+        ].copy()
+
+        display_df["SHAP Value"] = display_df[
+            "SHAP Value"
+        ].round(4)
+
+        st.dataframe(
+            display_df,
+            use_container_width=True,
+            hide_index=True
+        )
 
 
 # ============================================================
@@ -349,27 +555,30 @@ st.header("🤖 Model Performance")
 metric1, metric2, metric3 = st.columns(3)
 
 with metric1:
+
     st.metric(
         "R² Score",
         "0.85"
     )
 
 with metric2:
+
     st.metric(
         "MAE",
         "1.08"
     )
 
 with metric3:
+
     st.metric(
         "RMSE",
         "1.78"
     )
 
+
 st.markdown(
     """
-    The Random Forest model was selected after comparing three regression
-    algorithms.
+    ### Model Comparison
 
     | Model | MAE | RMSE | R² |
     |---|---:|---:|---:|
@@ -381,20 +590,19 @@ st.markdown(
 
 
 # ============================================================
-# FEATURE IMPORTANCE
+# GLOBAL FEATURE IMPORTANCE
 # ============================================================
 
 st.divider()
 
-st.header("🔍 Feature Importance")
+st.header("🔍 Global Feature Importance")
 
 st.markdown(
     """
-    Feature importance shows which variables were most useful to the
-    Random Forest model when predicting the final grade.
+    This visualization shows which features were most useful to the
+    Random Forest model across the overall dataset.
 
-    **Important:** Feature importance indicates predictive usefulness,
-    not causation.
+    Feature importance indicates predictive usefulness, not causation.
     """
 )
 
@@ -411,17 +619,61 @@ if os.path.exists(feature_importance_path):
         use_container_width=True
     )
 
-else:
 
-    st.warning(
-        "Feature importance visualization is not available."
+# ============================================================
+# GLOBAL SHAP EXPLANATIONS
+# ============================================================
+
+st.divider()
+
+st.header("🧠 Global SHAP Explainability")
+
+st.markdown(
+    """
+    SHAP provides a model-independent way to understand how features
+    influence predictions.
+
+    Unlike traditional feature importance, SHAP values show both the
+    magnitude and direction of feature contributions.
+    """
+)
+
+
+shap_summary_path = os.path.join(
+    FIGURES_PATH,
+    "shap_summary.png"
+)
+
+if os.path.exists(shap_summary_path):
+
+    st.subheader("SHAP Summary")
+
+    st.image(
+        shap_summary_path,
+        caption="SHAP Summary Plot",
+        use_container_width=True
+    )
+
+
+shap_bar_path = os.path.join(
+    FIGURES_PATH,
+    "shap_feature_importance.png"
+)
+
+if os.path.exists(shap_bar_path):
+
+    st.subheader("Mean Absolute SHAP Importance")
+
+    st.image(
+        shap_bar_path,
+        caption="Mean Absolute SHAP Feature Importance",
+        use_container_width=True
     )
 
 
 st.info(
-    "G2 has the highest predictive importance in this model. "
-    "This is expected because G2 is the student's second-period grade "
-    "and is strongly related to the final grade G3."
+    "G2 is strongly predictive because it represents the student's "
+    "second-period grade, which occurs shortly before the final grade G3."
 )
 
 
@@ -435,8 +687,8 @@ st.header("📈 Model Evaluation")
 
 st.markdown(
     """
-    The following visualizations evaluate how well the Random Forest
-    model performs on unseen test data.
+    These visualizations evaluate the Random Forest model on unseen
+    test data.
     """
 )
 
@@ -506,7 +758,7 @@ st.header("🔬 Exploratory Data Analysis")
 st.markdown(
     """
     These visualizations show important relationships discovered
-    during exploratory analysis of the student dataset.
+    during exploratory analysis.
     """
 )
 
@@ -576,18 +828,21 @@ st.header("📚 Dataset Information")
 info_col1, info_col2, info_col3 = st.columns(3)
 
 with info_col1:
+
     st.metric(
         "Students",
         f"{len(data):,}"
     )
 
 with info_col2:
+
     st.metric(
         "Features",
         f"{data.shape[1]}"
     )
 
 with info_col3:
+
     st.metric(
         "Target",
         "G3 / 20"
@@ -610,5 +865,5 @@ st.divider()
 
 st.caption(
     "🎓 Student Performance Analyzer | "
-    "Machine Learning Project by Harsha Tripathi"
+    "Machine Learning & Explainable AI Project by Harsha Tripathi"
 )
