@@ -234,7 +234,6 @@ if page == "🎯 Grade Prediction":
             input_data
         )[0]
 
-        # Keep prediction within valid grade range
         prediction = max(
             0,
             min(20, prediction)
@@ -292,21 +291,18 @@ if page == "🎯 Grade Prediction":
     col1, col2, col3 = st.columns(3)
 
     with col1:
-
         st.metric(
             "Model",
             "Random Forest"
         )
 
     with col2:
-
         st.metric(
             "R² Score",
             "0.85"
         )
 
     with col3:
-
         st.metric(
             "MAE",
             "1.08"
@@ -345,28 +341,24 @@ else:
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-
         st.metric(
             "Students",
             data.shape[0]
         )
 
     with col2:
-
         st.metric(
             "Features",
             data.shape[1]
         )
 
     with col3:
-
         st.metric(
             "Average Grade",
             f"{data['G3'].mean():.2f}"
         )
 
     with col4:
-
         st.metric(
             "Median Grade",
             f"{data['G3'].median():.0f}"
@@ -479,6 +471,144 @@ else:
     ax.set_title(
         "Average Final Grade by Previous Failures"
     )
+
+    st.pyplot(fig)
+
+
+    # ==================================================
+    # MODEL COMPARISON
+    # ==================================================
+
+    st.divider()
+
+    st.subheader(
+        "🤖 Model Performance Comparison"
+    )
+
+    model_results = pd.DataFrame({
+        "Model": [
+            "Linear Regression",
+            "Gradient Boosting",
+            "Random Forest"
+        ],
+        "MAE": [
+            1.38,
+            1.16,
+            1.08
+        ],
+        "RMSE": [
+            2.16,
+            1.85,
+            1.78
+        ],
+        "R² Score": [
+            0.77,
+            0.83,
+            0.85
+        ]
+    })
+
+    st.dataframe(
+        model_results,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.markdown(
+        """
+        **🏆 Best Model: Random Forest**
+
+        Random Forest achieved the highest R² score (**0.85**)
+        and the lowest MAE (**1.08**) among the three models.
+        """
+    )
+
+    fig, ax = plt.subplots(
+        figsize=(9, 5)
+    )
+
+    ax.bar(
+        model_results["Model"],
+        model_results["R² Score"]
+    )
+
+    ax.set_title(
+        "Model R² Score Comparison"
+    )
+
+    ax.set_xlabel(
+        "Model"
+    )
+
+    ax.set_ylabel(
+        "R² Score"
+    )
+
+    ax.set_ylim(
+        0,
+        1
+    )
+
+    st.pyplot(fig)
+
+
+    # ==================================================
+    # FEATURE IMPORTANCE
+    # ==================================================
+
+    st.divider()
+
+    st.subheader(
+        "🔍 Feature Importance"
+    )
+
+    st.markdown(
+        """
+        Feature importance shows which variables contributed
+        most strongly to the Random Forest model's predictions.
+        """
+    )
+
+    feature_names = model.feature_names_in_
+
+    feature_importance = model.feature_importances_
+
+    importance_df = pd.DataFrame({
+        "Feature": feature_names,
+        "Importance": feature_importance
+    }).sort_values(
+        "Importance",
+        ascending=False
+    )
+
+    st.dataframe(
+        importance_df,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    fig, ax = plt.subplots(
+        figsize=(9, 6)
+    )
+
+    ax.barh(
+        importance_df["Feature"],
+        importance_df["Importance"]
+    )
+
+    ax.set_title(
+        "Random Forest Feature Importance"
+    )
+
+    ax.set_xlabel(
+        "Importance"
+    )
+
+    ax.set_ylabel(
+        "Feature"
+    )
+
+    ax.invert_yaxis()
 
     st.pyplot(fig)
 
