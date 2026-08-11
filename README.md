@@ -45,6 +45,10 @@ The **Random Forest model** achieved the best performance.
 
 The project includes an interactive Streamlit dashboard where users can enter student information and receive a predicted final grade.
 
+
+### 🔗 Live Demo
+
+👉 [Launch the Student Performance Analyzer](https://student-performance-analyzer-iidybamk2j9q2x2ddzmuvu.streamlit.app/)
 ### Application Features
 
 - 🎓 Student information input
