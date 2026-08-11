@@ -234,49 +234,127 @@ if page == "🎯 Grade Prediction":
             input_data
         )[0]
 
+        # Keep prediction within valid grade range
         prediction = max(
             0,
             min(20, prediction)
         )
 
+        percentage = (prediction / 20) * 100
+
+
+        # ==================================================
+        # PREDICTION RESULT
+        # ==================================================
+
         st.success(
             "Prediction generated successfully!"
         )
 
-        st.metric(
-            "Predicted Final Grade",
-            f"{prediction:.2f} / 20"
+        st.subheader("🎯 Prediction Result")
+
+        result_col1, result_col2, result_col3 = st.columns(3)
+
+        with result_col1:
+
+            st.metric(
+                "Predicted Final Grade",
+                f"{prediction:.2f} / 20"
+            )
+
+        with result_col2:
+
+            st.metric(
+                "Equivalent Percentage",
+                f"{percentage:.1f}%"
+            )
+
+        with result_col3:
+
+            if prediction >= 16:
+                performance_level = "Excellent"
+            elif prediction >= 12:
+                performance_level = "Good"
+            elif prediction >= 10:
+                performance_level = "Average"
+            else:
+                performance_level = "Needs Improvement"
+
+            st.metric(
+                "Performance Level",
+                performance_level
+            )
+
+
+        # ==================================================
+        # PROGRESS BAR
+        # ==================================================
+
+        st.markdown(
+            "**Predicted Grade Progress**"
+        )
+
+        st.progress(
+            prediction / 20
+        )
+
+        st.caption(
+            f"{prediction:.2f} out of 20 marks"
         )
 
 
         # ==================================================
-        # PERFORMANCE INTERPRETATION
+        # RECOMMENDATION
         # ==================================================
+
+        st.subheader("💡 Recommendation")
 
         if prediction >= 16:
 
             st.success(
-                "🌟 Excellent predicted performance!"
+                """
+                🌟 Excellent predicted performance!
+
+                The student is predicted to achieve a strong
+                final grade. Maintaining consistent study habits
+                should help sustain this performance.
+                """
             )
 
         elif prediction >= 12:
 
             st.info(
-                "👍 Good predicted performance."
+                """
+                👍 Good predicted performance!
+
+                The student is predicted to perform reasonably
+                well. Consistent revision and regular attendance
+                may help improve the final result further.
+                """
             )
 
         elif prediction >= 10:
 
             st.warning(
-                "📚 Moderate predicted performance. "
-                "There may be room for improvement."
+                """
+                📚 Moderate predicted performance.
+
+                Additional study time, improved attendance,
+                and focused preparation may help increase
+                the predicted final grade.
+                """
             )
 
         else:
 
             st.error(
-                "⚠️ Low predicted performance. "
-                "Additional academic support may be beneficial."
+                """
+                ⚠️ Low predicted performance.
+
+                The model suggests that additional academic
+                support, improved study habits, and consistent
+                preparation may be beneficial.
+                """
             )
 
 
@@ -291,18 +369,21 @@ if page == "🎯 Grade Prediction":
     col1, col2, col3 = st.columns(3)
 
     with col1:
+
         st.metric(
             "Model",
             "Random Forest"
         )
 
     with col2:
+
         st.metric(
             "R² Score",
             "0.85"
         )
 
     with col3:
+
         st.metric(
             "MAE",
             "1.08"
@@ -341,24 +422,28 @@ else:
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
+
         st.metric(
             "Students",
             data.shape[0]
         )
 
     with col2:
+
         st.metric(
             "Features",
             data.shape[1]
         )
 
     with col3:
+
         st.metric(
             "Average Grade",
             f"{data['G3'].mean():.2f}"
         )
 
     with col4:
+
         st.metric(
             "Median Grade",
             f"{data['G3'].median():.0f}"
