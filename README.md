@@ -1,265 +1,282 @@
 # 🎓 Student Performance Analyzer
 
-A machine learning project that analyzes student academic performance and predicts a student's final grade based on academic, demographic, and lifestyle-related factors.
+**End-to-end machine learning application for predicting student final grades with model evaluation, feature importance, and Explainable AI using SHAP.**
 
-The project covers the complete machine learning workflow:
+[![Python](https://img.shields.io/badge/Python-3.13-blue?logo=python)](https://www.python.org/)
+[![Scikit-learn](https://img.shields.io/badge/Scikit--learn-1.7.2-orange?logo=scikit-learn)](https://scikit-learn.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-App-red?logo=streamlit)](https://streamlit.io/)
+[![SHAP](https://img.shields.io/badge/Explainability-SHAP-purple)](https://shap.readthedocs.io/)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/harshatripathi7/student-performance-analyzer)
 
-- Data loading and preprocessing
-- Exploratory Data Analysis (EDA)
-- Data visualization
-- Multiple regression models
-- Model comparison
-- Model evaluation
-- Prediction system
-- Interactive Streamlit dashboard
-- Error and residual analysis
-- GitHub version control
+**Live Demo:** [Student Performance Analyzer](https://student-performance-analyzer-iidybamk2j9q2x2ddzmuvu.streamlit.app/)
 
 ---
 
-## 🚀 Project Overview
+## 📌 Overview
 
-The goal of this project is to predict a student's final grade (`G3`) out of 20 using information such as:
+Student Performance Analyzer is an end-to-end machine learning project that predicts a student's final academic grade (`G3`) using demographic, academic, and lifestyle-related features.
 
-- Previous grades
-- Study time
-- Previous failures
-- Absences
-- Parents' education
-- Free time
-- Social activity
-- Health
-- Age
+The project goes beyond model training by implementing:
 
-The project compares three machine learning regression algorithms:
+* Exploratory Data Analysis
+* Data visualization
+* Multiple regression models
+* Model performance comparison
+* Random Forest model selection
+* Model evaluation
+* Feature importance analysis
+* SHAP-based Explainable AI
+* Interactive Streamlit deployment
+* Reproducible project structure
+* Git-based version control
 
-1. Linear Regression
-2. Random Forest Regression
-3. Gradient Boosting Regression
-
-The **Random Forest model** achieved the best performance.
+The application achieves an **R² score of 0.85** with a Random Forest Regressor on the held-out test set, with an **MAE of 1.08** and **RMSE of 1.78**.
 
 ---
 
-## 🌐 Streamlit Application
+# 🏗️ System Architecture
 
-The project includes an interactive Streamlit dashboard where users can enter student information and receive a predicted final grade.
+The project follows a modular machine-learning pipeline:
 
+```mermaid
+flowchart TD
+    A[Student Performance Dataset] --> B[Data Loading]
+    B --> C[Exploratory Data Analysis]
+    C --> D[Feature Selection]
+    D --> E[Train/Test Split]
 
-### 🔗 Live Demo
+    E --> F[Linear Regression]
+    E --> G[Random Forest]
+    E --> H[Gradient Boosting]
 
-👉 [Launch the Student Performance Analyzer](https://student-performance-analyzer-iidybamk2j9q2x2ddzmuvu.streamlit.app/)
-### Application Features
+    F --> I[Model Evaluation]
+    G --> I
+    H --> I
 
-- 🎓 Student information input
-- 🔮 Final grade prediction
-- 📈 Estimated percentage
-- 💡 Personalized recommendations
-- 📊 Model performance metrics
-- 🎯 Actual vs Predicted analysis
-- 📉 Residual analysis
-- 📊 Prediction error distribution
-- 🔍 Exploratory data visualizations
+    I --> J[Best Model Selection]
+    J --> K[Random Forest Model]
 
-### Run the application
+    K --> L[Feature Importance]
+    K --> M[SHAP Explainability]
+    K --> N[Prediction Pipeline]
 
-```bash
-streamlit run app/app.py
+    N --> O[Streamlit Web Application]
+    L --> O
+    M --> O
 
-The application will open at:
+    O --> P[Final Grade Prediction]
+    O --> Q[Individual Explanation]
+    O --> R[Global Model Insights]
+```
 
-http://localhost:8501
-📊 Dataset
+### Pipeline
 
-The project uses the Student Performance Dataset containing academic, demographic, family, and lifestyle information about students.
+**Data → EDA → Feature Engineering/Selection → Model Training → Model Comparison → Best Model → Evaluation → Explainability → Deployment**
 
-Dataset Statistics
-Property	Value
-Students	395
-Features	33
-Target	G3
-Target Range	0–20
+This separation makes the project easier to maintain, test, and extend.
 
-The target variable is:
+---
 
+# 🚀 Key Features
+
+## 1. Exploratory Data Analysis
+
+The dataset is analyzed to identify relationships between student characteristics and academic performance.
+
+Current visualizations include:
+
+* Final grade distribution
+* Study time vs final grade
+* Previous failures vs final grade
+* Actual vs predicted grades
+* Residual plot
+* Prediction error distribution
+* Feature importance
+
+---
+
+## 2. Multiple Model Training
+
+Three regression algorithms are evaluated:
+
+* Linear Regression
+* Random Forest Regressor
+* Gradient Boosting Regressor
+
+### Model Comparison
+
+| Model             |      MAE |     RMSE |       R² |
+| ----------------- | -------: | -------: | -------: |
+| Linear Regression |     1.38 |     2.16 |     0.77 |
+| Random Forest     | **1.08** | **1.78** | **0.85** |
+| Gradient Boosting |     1.16 |     1.85 |     0.83 |
+
+Random Forest was selected as the final model because it achieved the best performance across the evaluation metrics.
+
+---
+
+## 3. Model Evaluation
+
+The final Random Forest model achieves:
+
+| Metric |    Score |
+| ------ | -------: |
+| MAE    | **1.08** |
+| RMSE   | **1.78** |
+| R²     | **0.85** |
+
+### Interpretation
+
+An **R² score of 0.85** means the model explains approximately 85% of the variance in final grades within the test set.
+
+An **MAE of 1.08** means that predictions are, on average, approximately 1.08 grade points away from the actual final grade.
+
+---
+
+# 🧠 Explainable AI with SHAP
+
+The project incorporates **SHAP (SHapley Additive exPlanations)** to make the Random Forest model interpretable.
+
+Instead of only producing:
+
+> Predicted Final Grade: 13.2 / 20
+
+the application can also explain **why the model produced that prediction**.
+
+### SHAP analysis includes:
+
+* Global feature importance
+* SHAP summary plot
+* Individual prediction explanations
+* SHAP waterfall visualization
+* Feature contribution values
+
+### Key Finding
+
+The current SHAP analysis shows that **G2 (second-period grade)** is the dominant predictive feature, followed by **absences**.
+
+This is expected because G2 is an academic performance measure immediately preceding the final grade G3.
+
+The analysis also demonstrates an important machine-learning consideration: highly predictive variables can provide excellent predictive performance while potentially limiting the usefulness of the model for **early intervention**, because G2 may only become available relatively late in the academic period.
+
+---
+
+# 📊 Feature Importance
+
+Random Forest feature importance analysis currently identifies the following features as the strongest contributors:
+
+| Feature            | Importance |
+| ------------------ | ---------: |
+| G2                 |      0.791 |
+| Absences           |      0.116 |
+| Age                |      0.027 |
+| Health             |      0.017 |
+| Father's Education |      0.012 |
+| G1                 |      0.010 |
+| Going Out          |      0.008 |
+| Study Time         |      0.006 |
+| Free Time          |      0.006 |
+| Mother's Education |      0.005 |
+| Previous Failures  |      0.004 |
+
+SHAP is used alongside built-in Random Forest feature importance to provide a more interpretable view of model behavior.
+
+---
+
+# 📊 Dataset
+
+The project uses the **Student Performance Dataset**, containing information about student demographics, academic performance, family background, study habits, lifestyle, and school attendance.
+
+### Dataset characteristics
+
+* **395 students**
+* **33 features**
+* Target variable: `G3`
+* Final grade range: **0–20**
+
+### Selected Features
+
+| Feature     | Description                       |
+| ----------- | --------------------------------- |
+| `age`       | Student age                       |
+| `studytime` | Weekly study time                 |
+| `failures`  | Number of previous class failures |
+| `absences`  | Number of school absences         |
+| `G1`        | First-period grade                |
+| `G2`        | Second-period grade               |
+| `Medu`      | Mother's education level          |
+| `Fedu`      | Father's education level          |
+| `freetime`  | Free time after school            |
+| `goout`     | Frequency of going out            |
+| `health`    | Current health status             |
+
+### Target
+
+```text
 G3 — Final Grade
-🔑 Important Features
-Feature	Description
-age	Student age
-studytime	Weekly study time
-failures	Number of previous class failures
-absences	Number of school absences
-G1	First period grade
-G2	Second period grade
-Medu	Mother's education level
-Fedu	Father's education level
-freetime	Free time after school
-goout	Frequency of going out
-health	Current health status
-🔍 Exploratory Data Analysis
+```
 
-The dataset was analyzed to understand the distribution of student grades and identify relationships between academic performance and different student characteristics.
+---
 
-Final Grade Distribution
+# 🌐 Interactive Web Application
 
-The dataset contains grades ranging from:
+The Streamlit application allows users to enter student information and receive:
 
-0 → 20
+1. Predicted final grade
+2. Model prediction details
+3. Individual feature contributions
+4. SHAP-based explanation
+5. Global model insights
 
-Average final grade:
+### Live Demo
 
-≈ 10.42 / 20
+**[Launch Student Performance Analyzer](https://student-performance-analyzer-iidybamk2j9q2x2ddzmuvu.streamlit.app/)**
 
-Median final grade:
+---
 
-11 / 20
+# 🛠️ Technology Stack
 
-Highest recorded grade:
+### Programming
 
-20 / 20
+* Python 3.13
 
-Lowest recorded grade:
+### Data Science
 
-0 / 20
-Visualization
+* Pandas
+* NumPy
+* Matplotlib
+* Seaborn
 
-📚 Study Time vs Final Grade
+### Machine Learning
 
-Students with higher study-time levels generally achieved higher average final grades.
+* Scikit-learn
+* Linear Regression
+* Random Forest
+* Gradient Boosting
 
-Study Time	Average G3
-1	10.05
-2	10.17
-3	11.40
-4	11.26
+### Explainable AI
 
-❌ Previous Failures vs Final Grade
+* SHAP
 
-Previous academic failures showed a strong relationship with final performance.
+### Model Persistence
 
-Previous Failures	Average G3
-0	11.25
-1	8.12
-2	6.24
-3	5.69
+* Joblib
 
-Students with more previous failures tended to have lower final grades in this dataset.
+### Application
 
-🤖 Machine Learning
+* Streamlit
 
-Three regression models were trained and compared.
+### Development
 
-Selected Features
-age
-studytime
-failures
-absences
-G1
-G2
-Medu
-Fedu
-freetime
-goout
-health
-Dataset Split
+* Git
+* GitHub
+* Virtual environments
 
-The dataset was divided into:
+---
 
-Dataset	Samples
-Training	316
-Testing	79
-Total	395
+# 📁 Project Structure
 
-The split was performed using:
-
-train_test_split(
-    test_size=0.2,
-    random_state=42
-)
-🏆 Model Comparison
-
-Three machine learning algorithms were evaluated.
-
-Model	MAE	RMSE	R²
-Linear Regression	1.38	2.16	0.77
-Random Forest	1.08	1.78	0.85
-Gradient Boosting	1.16	1.85	0.83
-🥇 Best Model: Random Forest
-
-The Random Forest model achieved the best overall performance.
-
-Performance
-
-MAE
-
-1.08
-
-RMSE
-
-1.78
-
-R² Score
-
-0.85
-
-An R² score of 0.85 means that the model explains approximately 85% of the variance in final grades on the test dataset.
-
-The MAE of 1.08 means that predictions differ from actual grades by approximately 1.08 grade points on average.
-
-📈 Model Evaluation
-
-The Random Forest model was evaluated using:
-
-Mean Absolute Error (MAE)
-Root Mean Squared Error (RMSE)
-R² Score
-Actual vs Predicted analysis
-Residual analysis
-Error distribution
-🎯 Actual vs Predicted Grades
-
-The actual-vs-predicted plot helps visualize how closely the model's predictions follow the real final grades.
-
-📉 Residual Analysis
-
-Residual analysis helps identify systematic prediction errors and determine whether the model's errors are reasonably distributed.
-
-📊 Prediction Error Distribution
-
-The error distribution provides insight into how frequently the model overestimates or underestimates student performance.
-
-🧠 Machine Learning Workflow
-
-The overall workflow used in this project is:
-
-Raw Dataset
-     ↓
-Data Loading
-     ↓
-Data Exploration
-     ↓
-Feature Selection
-     ↓
-Train/Test Split
-     ↓
-Model Training
-     ↓
-Linear Regression
-     ↓
-Random Forest
-     ↓
-Gradient Boosting
-     ↓
-Model Comparison
-     ↓
-Best Model Selection
-     ↓
-Model Evaluation
-     ↓
-Prediction
-     ↓
-Streamlit Dashboard
-📁 Project Structure
+```text
 student-performance-analyzer/
 │
 ├── app/
@@ -275,122 +292,273 @@ student-performance-analyzer/
 │
 ├── reports/
 │   └── figures/
-│       ├── final_grade_distribution.png
-│       ├── studytime_vs_grade.png
-│       ├── failures_vs_grade.png
 │       ├── actual_vs_predicted.png
+│       ├── error_distribution.png
+│       ├── failures_vs_grade.png
+│       ├── feature_importance.png
+│       ├── final_grade_distribution.png
 │       ├── residual_plot.png
-│       └── error_distribution.png
+│       ├── shap_feature_importance.png
+│       ├── shap_summary.png
+│       ├── shap_waterfall.png
+│       └── studytime_vs_grade.png
 │
 ├── src/
 │   ├── data_loader.py
 │   ├── eda.py
-│   ├── visualization.py
-│   ├── train_model.py
+│   ├── evaluate_model.py
+│   ├── feature_importance.py
 │   ├── predict.py
-│   └── evaluate_model.py
+│   ├── shap_explanation.py
+│   ├── train_model.py
+│   └── visualization.py
 │
 ├── .gitignore
 ├── README.md
-└── requirements.txt
-🛠️ Technologies Used
-Programming
-Python
-Data Analysis
-Pandas
-NumPy
-Visualization
-Matplotlib
-Seaborn
-Machine Learning
-Scikit-learn
-Joblib
-Web Application
-Streamlit
-Version Control
-Git
-GitHub
-⚙️ Installation
+├── requirements.txt
+└── LICENSE
+```
+
+---
+
+# ⚙️ Installation
 
 Clone the repository:
 
+```bash
 git clone https://github.com/harshatripathi7/student-performance-analyzer.git
+```
 
-Move into the project directory:
+Navigate into the project:
 
+```bash
 cd student-performance-analyzer
+```
 
 Create a virtual environment:
 
+```bash
 python3 -m venv .venv
+```
 
-Activate the environment on macOS/Linux:
+Activate it:
 
+### macOS / Linux
+
+```bash
 source .venv/bin/activate
+```
+
+### Windows
+
+```bash
+.venv\Scripts\activate
+```
 
 Install dependencies:
 
+```bash
 pip install -r requirements.txt
-▶️ Running the Project
-Run Exploratory Data Analysis
+```
+
+---
+
+# ▶️ Running the Project
+
+### Run exploratory analysis
+
+```bash
 python3 src/eda.py
-Generate Visualizations
+```
+
+### Generate visualizations
+
+```bash
 python3 src/visualization.py
-Train the Models
+```
+
+### Train and compare models
+
+```bash
 python3 src/train_model.py
-Evaluate the Model
+```
+
+### Evaluate the final model
+
+```bash
 python3 src/evaluate_model.py
-Make a Terminal Prediction
+```
+
+### Generate feature importance
+
+```bash
+python3 src/feature_importance.py
+```
+
+### Generate SHAP explanations
+
+```bash
+python3 src/shap_explanation.py
+```
+
+### Make a terminal prediction
+
+```bash
 python3 src/predict.py
-Launch the Streamlit Application
+```
+
+### Launch the Streamlit application
+
+```bash
 streamlit run app/app.py
-🔮 Future Improvements
+```
 
-Potential improvements include:
+The application will normally be available at:
 
- Hyperparameter tuning
- Cross-validation
- Feature importance visualization
- SHAP-based explainability
- Prediction confidence analysis
- Interactive Plotly visualizations
- Additional machine learning algorithms
- Automated unit tests
- CI/CD using GitHub Actions
- Online deployment
- Model monitoring
- Improved recommendation system
-📌 Key Takeaways
+```text
+http://localhost:8501
+```
 
-The project demonstrates a complete end-to-end machine learning workflow.
+---
 
-The main findings are:
+# 🔬 Machine Learning Workflow
 
-Previous grades (G1 and G2) are important predictors of final performance.
-Previous failures are strongly associated with lower final grades.
-Study time shows a positive relationship with academic performance.
-Random Forest outperformed Linear Regression and Gradient Boosting on the test dataset.
-The final Random Forest model achieved an R² score of 0.85.
-👩‍💻 Author
-Harsha Tripathi
+The project follows a reproducible workflow:
 
-B.Tech Computer Science & Engineering
+### 1. Load Data
 
-Interests
-Machine Learning
-Artificial Intelligence
-Data Science
-Software Development
-Research
-⭐ Project Status
+The Student Performance dataset is loaded using Pandas.
 
-🚧 Actively Developing
+### 2. Select Features
 
-This project is being expanded with additional machine learning techniques, explainability, testing, and deployment capabilities.
+Relevant academic, demographic, and lifestyle features are selected.
 
-📄 License
+### 3. Split Dataset
 
-This project is intended for educational and portfolio purposes.
+The dataset is divided into:
 
+* 80% training data
+* 20% testing data
 
+using a fixed random state for reproducibility.
+
+### 4. Train Multiple Models
+
+Three regression models are trained and evaluated.
+
+### 5. Compare Models
+
+MAE, RMSE, and R² are used to compare performance.
+
+### 6. Select Best Model
+
+Random Forest achieves the highest R² and lowest error.
+
+### 7. Persist Model
+
+The trained model is serialized using Joblib.
+
+### 8. Evaluate Predictions
+
+Actual and predicted values are analyzed using regression metrics and diagnostic plots.
+
+### 9. Explain Predictions
+
+SHAP provides both global and individual prediction explanations.
+
+### 10. Deploy
+
+The model is exposed through an interactive Streamlit application.
+
+---
+
+# 🧪 Model Evaluation
+
+Evaluation includes:
+
+* Mean Absolute Error
+* Root Mean Squared Error
+* R² Score
+* Actual vs predicted plot
+* Residual plot
+* Error distribution
+
+These diagnostics provide a more complete evaluation than relying on a single performance metric.
+
+---
+
+# 🔮 Future Improvements
+
+Planned improvements include:
+
+* Hyperparameter optimization
+* Cross-validation
+* Automated unit tests
+* Model monitoring
+* Improved error analysis
+* Additional ML algorithms
+* Prediction confidence intervals
+* More interactive SHAP visualizations
+* Automated CI/CD using GitHub Actions
+* Improved UI/UX
+* Containerized deployment
+* Early-warning prediction using only features available before final examinations
+
+---
+
+# 💼 Why This Project Is Portfolio-Relevant
+
+This project demonstrates practical skills across the complete machine-learning development lifecycle:
+
+**Data → Analysis → Modeling → Evaluation → Explainability → Application → Deployment**
+
+Technical competencies demonstrated include:
+
+* Python development
+* Data preprocessing
+* Exploratory data analysis
+* Regression modeling
+* Ensemble learning
+* Model comparison
+* Model evaluation
+* Feature importance
+* Explainable AI
+* SHAP
+* Model serialization
+* Streamlit application development
+* Git/GitHub
+* Cloud deployment
+
+Rather than treating machine learning as a notebook-only exercise, the project packages the trained model into a usable application and provides explanations for its predictions.
+
+---
+
+# 👩‍💻 Author
+
+## Harsha Tripathi
+
+**B.Tech Computer Science & Engineering**
+
+Interested in:
+
+* Machine Learning
+* Artificial Intelligence
+* Explainable AI
+* Data Science
+* Software Development
+* Research
+
+### Links
+
+* **GitHub:** [harshatripathi7](https://github.com/harshatripathi7)
+* **Project Repository:** [Student Performance Analyzer](https://github.com/harshatripathi7/student-performance-analyzer)
+* **Live Application:** [Streamlit Demo](https://student-performance-analyzer-iidybamk2j9q2x2ddzmuvu.streamlit.app/)
+
+---
+
+# ⭐ Project Status
+
+**Active development**
+
+The project is currently functional and deployed. Future development will focus on automated testing, model optimization, improved explainability, and production-oriented machine-learning practices.
 
